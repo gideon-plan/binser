@@ -5,7 +5,11 @@
 
 {.experimental: "strict_funcs".}
 
-import lattice
+import basis/code/choice
+
+type
+  BinserError* = object of CatchableError
+
 
 # =====================================================================================================================
 # Types

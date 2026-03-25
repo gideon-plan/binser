@@ -2,5 +2,5 @@
 
 {.experimental: "strict_funcs".}
 
-import binser/[msgpack, cbor, schema, lattice]
-export msgpack, cbor, schema, lattice
+import binser/[msgpack, cbor, schema]
+export msgpack, cbor, schema

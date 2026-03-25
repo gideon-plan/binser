@@ -3,7 +3,7 @@
 {.experimental: "strict_funcs".}
 
 import std/[strutils, tables]
-import lattice, msgpack
+import basis/code/choice, msgpack
 
 # =====================================================================================================================
 # Types
@@ -36,7 +36,7 @@ proc schema*(name: string, fields: varargs[FieldDef]): Schema =
 # =====================================================================================================================
 
 proc encode_msgpack*(s: Schema, values: Table[string, string]
-                    ): Result[string, BinserError] =
+                    ): Choice[string] =
   ## Encode a record as a msgpack map using schema field ordering.
   var pairs: seq[(MsgPackValue, MsgPackValue)]
   for f in s.fields:
@@ -50,16 +50,16 @@ proc encode_msgpack*(s: Schema, values: Table[string, string]
       of ftInt:
         try: mp_int(int64(strutils.parseInt(raw)))
         except ValueError:
-          return Result[string, BinserError].bad(BinserError(msg: "invalid int: " & raw))
+          return bad[string]("binser", "invalid int: " & raw)
       of ftUint:
         try: mp_uint(uint64(strutils.parseInt(raw)))
         except ValueError:
-          return Result[string, BinserError].bad(BinserError(msg: "invalid uint: " & raw))
+          return bad[string]("binser", "invalid uint: " & raw)
       of ftFloat:
         try: mp_float64(strutils.parseFloat(raw))
         except ValueError:
-          return Result[string, BinserError].bad(BinserError(msg: "invalid float: " & raw))
+          return bad[string]("binser", "invalid float: " & raw)
       of ftBool: mp_bool(raw == "true")
       of ftBin: mp_bin(raw)
     pairs.add((key, val))
-  Result[string, BinserError].good(encode(mp_map(pairs)))
+  good(encode(mp_map(pairs)))

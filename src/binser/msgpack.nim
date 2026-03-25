@@ -6,7 +6,8 @@
 
 {.experimental: "strict_funcs".}
 
-import lattice
+import basis/code/choice
+import cbor
 
 # =====================================================================================================================
 # Types
