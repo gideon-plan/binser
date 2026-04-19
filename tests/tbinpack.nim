@@ -137,7 +137,7 @@ suite "cbor":
 
 suite "schema":
   test "encode msgpack with schema":
-    let s = schema("person", field("name", FieldType.Str), field("age", FieldType.Int))
+    let s = schema("person", field("name", FieldKind.Str), field("age", FieldKind.Int))
     var vals: Table[string, string]
     vals["name"] = "Alice"
     vals["age"] = "30"

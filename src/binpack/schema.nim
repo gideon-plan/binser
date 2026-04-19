@@ -10,12 +10,12 @@ import basis/code/choice, msgpack
 # =====================================================================================================================
 
 type
-  FieldType* {.pure.} = enum
+  FieldKind* {.pure.} = enum
     Int, Uint, Float, Str, Bool, Bin
 
   FieldDef* = object
     name*: string
-    field_type*: FieldType
+    field_type*: FieldKind
 
   Schema* = object
     name*: string
@@ -25,7 +25,7 @@ type
 # Schema construction
 # =====================================================================================================================
 
-proc field*(name: string, ft: FieldType): FieldDef =
+proc field*(name: string, ft: FieldKind): FieldDef =
   FieldDef(name: name, field_type: ft)
 
 proc schema*(name: string, fields: varargs[FieldDef]): Schema =
@@ -46,20 +46,20 @@ proc encode_msgpack*(s: Schema, values: Table[string, string]
       continue
     let raw = values[f.name]
     let val = case f.field_type
-      of FieldType.Str: mp_str(raw)
-      of FieldType.Int:
+      of FieldKind.Str: mp_str(raw)
+      of FieldKind.Int:
         try: mp_int(int64(strutils.parseInt(raw)))
         except ValueError:
           return bad[string]("binser", "invalid int: " & raw)
-      of FieldType.Uint:
+      of FieldKind.Uint:
         try: mp_uint(uint64(strutils.parseInt(raw)))
         except ValueError:
           return bad[string]("binser", "invalid uint: " & raw)
-      of FieldType.Float:
+      of FieldKind.Float:
         try: mp_float64(strutils.parseFloat(raw))
         except ValueError:
           return bad[string]("binser", "invalid float: " & raw)
-      of FieldType.Bool: mp_bool(raw == "true")
-      of FieldType.Bin: mp_bin(raw)
+      of FieldKind.Bool: mp_bool(raw == "true")
+      of FieldKind.Bin: mp_bin(raw)
     pairs.add((key, val))
   good(encode(mp_map(pairs)))
