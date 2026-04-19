@@ -10,8 +10,8 @@ import basis/code/choice, msgpack
 # =====================================================================================================================
 
 type
-  FieldType* = enum
-    ftInt, ftUint, ftFloat, ftStr, ftBool, ftBin
+  FieldType* {.pure.} = enum
+    Int, Uint, Float, Str, Bool, Bin
 
   FieldDef* = object
     name*: string
@@ -46,20 +46,20 @@ proc encode_msgpack*(s: Schema, values: Table[string, string]
       continue
     let raw = values[f.name]
     let val = case f.field_type
-      of ftStr: mp_str(raw)
-      of ftInt:
+      of FieldType.Str: mp_str(raw)
+      of FieldType.Int:
         try: mp_int(int64(strutils.parseInt(raw)))
         except ValueError:
           return bad[string]("binser", "invalid int: " & raw)
-      of ftUint:
+      of FieldType.Uint:
         try: mp_uint(uint64(strutils.parseInt(raw)))
         except ValueError:
           return bad[string]("binser", "invalid uint: " & raw)
-      of ftFloat:
+      of FieldType.Float:
         try: mp_float64(strutils.parseFloat(raw))
         except ValueError:
           return bad[string]("binser", "invalid float: " & raw)
-      of ftBool: mp_bool(raw == "true")
-      of ftBin: mp_bin(raw)
+      of FieldType.Bool: mp_bool(raw == "true")
+      of FieldType.Bin: mp_bin(raw)
     pairs.add((key, val))
   good(encode(mp_map(pairs)))

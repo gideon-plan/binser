@@ -14,23 +14,23 @@ import cbor
 # =====================================================================================================================
 
 type
-  MsgPackKind* = enum
-    mkNil, mkBool, mkInt, mkUint, mkFloat32, mkFloat64,
-    mkStr, mkBin, mkArray, mkMap, mkExt
+  MsgPackKind* {.pure.} = enum
+    Nil, Bool, Int, Uint, Float32, Float64,
+    Str, Bin, Array, Map, Ext
 
   MsgPackValue* = ref object
     case kind*: MsgPackKind
-    of mkNil: discard
-    of mkBool: bool_val*: bool
-    of mkInt: int_val*: int64
-    of mkUint: uint_val*: uint64
-    of mkFloat32: f32_val*: float32
-    of mkFloat64: f64_val*: float64
-    of mkStr: str_val*: string
-    of mkBin: bin_val*: string
-    of mkArray: arr_val*: seq[MsgPackValue]
-    of mkMap: map_val*: seq[(MsgPackValue, MsgPackValue)]
-    of mkExt:
+    of MsgPackKind.Nil: discard
+    of MsgPackKind.Bool: bool_val*: bool
+    of MsgPackKind.Int: int_val*: int64
+    of MsgPackKind.Uint: uint_val*: uint64
+    of MsgPackKind.Float32: f32_val*: float32
+    of MsgPackKind.Float64: f64_val*: float64
+    of MsgPackKind.Str: str_val*: string
+    of MsgPackKind.Bin: bin_val*: string
+    of MsgPackKind.Array: arr_val*: seq[MsgPackValue]
+    of MsgPackKind.Map: map_val*: seq[(MsgPackValue, MsgPackValue)]
+    of MsgPackKind.Ext:
       ext_type*: int8
       ext_data*: string
 
@@ -38,16 +38,16 @@ type
 # Constructors
 # =====================================================================================================================
 
-proc mp_nil*(): MsgPackValue = MsgPackValue(kind: mkNil)
-proc mp_bool*(v: bool): MsgPackValue = MsgPackValue(kind: mkBool, bool_val: v)
-proc mp_int*(v: int64): MsgPackValue = MsgPackValue(kind: mkInt, int_val: v)
-proc mp_uint*(v: uint64): MsgPackValue = MsgPackValue(kind: mkUint, uint_val: v)
-proc mp_float32*(v: float32): MsgPackValue = MsgPackValue(kind: mkFloat32, f32_val: v)
-proc mp_float64*(v: float64): MsgPackValue = MsgPackValue(kind: mkFloat64, f64_val: v)
-proc mp_str*(v: string): MsgPackValue = MsgPackValue(kind: mkStr, str_val: v)
-proc mp_bin*(v: string): MsgPackValue = MsgPackValue(kind: mkBin, bin_val: v)
-proc mp_array*(v: seq[MsgPackValue]): MsgPackValue = MsgPackValue(kind: mkArray, arr_val: v)
-proc mp_map*(v: seq[(MsgPackValue, MsgPackValue)]): MsgPackValue = MsgPackValue(kind: mkMap, map_val: v)
+proc mp_nil*(): MsgPackValue = MsgPackValue(kind: MsgPackKind.Nil)
+proc mp_bool*(v: bool): MsgPackValue = MsgPackValue(kind: MsgPackKind.Bool, bool_val: v)
+proc mp_int*(v: int64): MsgPackValue = MsgPackValue(kind: MsgPackKind.Int, int_val: v)
+proc mp_uint*(v: uint64): MsgPackValue = MsgPackValue(kind: MsgPackKind.Uint, uint_val: v)
+proc mp_float32*(v: float32): MsgPackValue = MsgPackValue(kind: MsgPackKind.Float32, f32_val: v)
+proc mp_float64*(v: float64): MsgPackValue = MsgPackValue(kind: MsgPackKind.Float64, f64_val: v)
+proc mp_str*(v: string): MsgPackValue = MsgPackValue(kind: MsgPackKind.Str, str_val: v)
+proc mp_bin*(v: string): MsgPackValue = MsgPackValue(kind: MsgPackKind.Bin, bin_val: v)
+proc mp_array*(v: seq[MsgPackValue]): MsgPackValue = MsgPackValue(kind: MsgPackKind.Array, arr_val: v)
+proc mp_map*(v: seq[(MsgPackValue, MsgPackValue)]): MsgPackValue = MsgPackValue(kind: MsgPackKind.Map, map_val: v)
 
 # =====================================================================================================================
 # Encode
@@ -66,11 +66,11 @@ proc encode*(v: MsgPackValue): string {.raises: [BinserError].}
 
 proc encode*(v: MsgPackValue): string =
   case v.kind
-  of mkNil:
+  of MsgPackKind.Nil:
     result = "\xc0"
-  of mkBool:
+  of MsgPackKind.Bool:
     result = if v.bool_val: "\xc3" else: "\xc2"
-  of mkInt:
+  of MsgPackKind.Int:
     let i = v.int_val
     if i >= 0 and i <= 127:
       result = $char(i)
@@ -88,7 +88,7 @@ proc encode*(v: MsgPackValue): string =
       let u = cast[uint64](i)
       for j in 0 ..< 8:
         result[8 - j] = char((u shr (j * 8)) and 0xFF)
-  of mkUint:
+  of MsgPackKind.Uint:
     let u = v.uint_val
     if u <= 127:
       result = $char(u)
@@ -103,19 +103,19 @@ proc encode*(v: MsgPackValue): string =
       result[0] = '\xcf'
       for j in 0 ..< 8:
         result[8 - j] = char((u shr (j * 8)) and 0xFF)
-  of mkFloat32:
+  of MsgPackKind.Float32:
     result = newString(5)
     result[0] = '\xca'
     let bits = cast[uint32](v.f32_val)
     result[1] = char((bits shr 24) and 0xFF); result[2] = char((bits shr 16) and 0xFF)
     result[3] = char((bits shr 8) and 0xFF); result[4] = char(bits and 0xFF)
-  of mkFloat64:
+  of MsgPackKind.Float64:
     result = newString(9)
     result[0] = '\xcb'
     let bits = cast[uint64](v.f64_val)
     for j in 0 ..< 8:
       result[8 - j] = char((bits shr (j * 8)) and 0xFF)
-  of mkStr:
+  of MsgPackKind.Str:
     let n = v.str_val.len
     if n <= 31:
       result = $char(0xa0'u8 or uint8(n)) & v.str_val
@@ -125,7 +125,7 @@ proc encode*(v: MsgPackValue): string =
       result = "\xda" & encode_uint16_be(uint16(n)) & v.str_val
     else:
       result = "\xdb" & encode_uint32_be(uint32(n)) & v.str_val
-  of mkBin:
+  of MsgPackKind.Bin:
     let n = v.bin_val.len
     if n <= 255:
       result = "\xc4" & $char(n) & v.bin_val
@@ -133,7 +133,7 @@ proc encode*(v: MsgPackValue): string =
       result = "\xc5" & encode_uint16_be(uint16(n)) & v.bin_val
     else:
       result = "\xc6" & encode_uint32_be(uint32(n)) & v.bin_val
-  of mkArray:
+  of MsgPackKind.Array:
     let n = v.arr_val.len
     if n <= 15:
       result = $char(0x90'u8 or uint8(n))
@@ -143,7 +143,7 @@ proc encode*(v: MsgPackValue): string =
       result = "\xdd" & encode_uint32_be(uint32(n))
     for item in v.arr_val:
       result.add(encode(item))
-  of mkMap:
+  of MsgPackKind.Map:
     let n = v.map_val.len
     if n <= 15:
       result = $char(0x80'u8 or uint8(n))
@@ -154,7 +154,7 @@ proc encode*(v: MsgPackValue): string =
     for (k, val) in v.map_val:
       result.add(encode(k))
       result.add(encode(val))
-  of mkExt:
+  of MsgPackKind.Ext:
     raise newException(BinserError, "ext encoding not implemented")
 
 # =====================================================================================================================
